@@ -8,25 +8,31 @@ using namespace std;
 using namespace cv;
 
 Mat img;
-vector<vector<int>> myColors{
-    {126, 30, 73, 179, 179, 179} //Blue
-};
+vector<vector<int>> newPoints;
+vector<vector<int>>
+    myColors{
+        {113, 92, 52, 173, 140, 179} //Blue
+    };
 
-void getContours(Mat imgDil)
+vector<Scalar> myColorValues{
+    {255, 0, 255}};
+
+Point getContours(Mat imgDil)
 {
     vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
 
+    string objectType;
     findContours(imgDil, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+    vector<vector<Point>> conPoly(contours.size());
+    vector<Rect> boundRect(contours.size());
 
+    Point myPoint(0, 0);
     for (int i = 0; i < contours.size(); i++)
     {
         int area = contourArea(contours[i]);
         cout << area << endl;
 
-        vector<vector<Point>> conPoly(contours.size());
-        vector<Rect> boundRect(contours.size());
-        string objectType;
         if (area > 1000)
         {
             float peri = arcLength(contours[i], true);
@@ -34,13 +40,17 @@ void getContours(Mat imgDil)
 
             cout << conPoly[i].size() << endl;
             boundRect[i] = boundingRect(conPoly[i]);
+            myPoint.x = boundRect[i].x + boundRect[i].width / 2;
+            myPoint.y = boundRect[i].y;
 
-            drawContours(img, conPoly, i, Scalar(0, 47, 147), 2);
+            // drawContours(img, conPoly, i, Scalar(255, 0, 255), 2);
+            rectangle(img, boundRect[i].tl(), boundRect[i].br(), Scalar(0, 255, 0), 5);
         }
     }
+    return myPoint;
 }
 
-void findColor(Mat img)
+vector<vector<int>> findColor(Mat img)
 {
     Mat imgHSV;
     cvtColor(img, imgHSV, COLOR_BGR2HSV);
@@ -50,19 +60,33 @@ void findColor(Mat img)
         Scalar upper(myColors[i][3], myColors[i][4], myColors[i][5]);
         Mat mask;
         inRange(imgHSV, lower, upper, mask);
-        imshow(to_string(i), mask);
+        // imshow(to_string(i), mask);
+        Point myPoint = getContours(mask);
+        if (myPoint.x != 0 && myPoint.y != 0)
+        {
+            newPoints.push_back({myPoint.x, myPoint.y, i});
+        }
+    }
+    return newPoints;
+}
+
+void drawOnCanvas(vector<vector<int>> newPoints, vector<Scalar> myColorValues)
+{
+    for (int i = 0; i < newPoints.size(); i++)
+    {
+        circle(img, Point(newPoints[i][0], newPoints[i][1]), 10, (myColorValues[newPoints[i][2]]), FILLED);
     }
 }
 
 int main()
 {
     VideoCapture cap(0);
-    Mat img;
 
     while (true)
     {
         cap.read(img);
-        findColor(img);
+        newPoints = findColor(img);
+        drawOnCanvas(newPoints, myColorValues);
         imshow("Image", img);
         waitKey(1);
     }
