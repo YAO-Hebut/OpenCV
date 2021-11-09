@@ -7,9 +7,38 @@
 using namespace std;
 using namespace cv;
 
+Mat img;
 vector<vector<int>> myColors{
     {126, 30, 73, 179, 179, 179} //Blue
 };
+
+void getContours(Mat imgDil)
+{
+    vector<vector<Point>> contours;
+    vector<Vec4i> hierarchy;
+
+    findContours(imgDil, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+    for (int i = 0; i < contours.size(); i++)
+    {
+        int area = contourArea(contours[i]);
+        cout << area << endl;
+
+        vector<vector<Point>> conPoly(contours.size());
+        vector<Rect> boundRect(contours.size());
+        string objectType;
+        if (area > 1000)
+        {
+            float peri = arcLength(contours[i], true);
+            approxPolyDP(contours[i], conPoly[i], 0.02 * peri, true);
+
+            cout << conPoly[i].size() << endl;
+            boundRect[i] = boundingRect(conPoly[i]);
+
+            drawContours(img, conPoly, i, Scalar(0, 47, 147), 2);
+        }
+    }
+}
 
 void findColor(Mat img)
 {
