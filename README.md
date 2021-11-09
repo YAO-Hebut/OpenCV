@@ -1,2 +1,2 @@
 # OpenCV
-this is ytq's learning of opencv
+this is ytq's learning  process of opencv
